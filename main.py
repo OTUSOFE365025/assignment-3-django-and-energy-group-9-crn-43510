@@ -1,32 +1,69 @@
-############################################################################
-## Django ORM Standalone Python Template
-############################################################################
-""" Here we'll import the parts of Django we need. It's recommended to leave
-these settings as is, and skip to START OF APPLICATION section below """
-
-# Turn off bytecode generation
-import sys
-sys.dont_write_bytecode = True
-
-# Import settings
 import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
-
-# setup django environment
 import django
+
+# Configure Django settings for standalone ORM usage
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 django.setup()
 
-# Import your models for use in your script
-from db.models import *
+from db.models import Product
 
-############################################################################
-## START OF APPLICATION
-############################################################################
-""" Replace the code below with your own """
 
-# Seed a few users in the database
-User.objects.create(name='Dan')
-User.objects.create(name='Robert')
+def seed_products():
+    """
+    Populate the database with sample products (UPC, name, price).
+    Only runs if there are no products yet, to avoid duplicates.
+    """
+    if Product.objects.exists():
+        print("Products already exist. Skipping seeding.")
+        return
 
-for u in User.objects.all():
-    print(f'ID: {u.id} \tUsername: {u.name}')
+    products = [
+        # upc, name, price in cents
+        ("111111111111", "2L Milk", 399),
+        ("222222222222", "Whole Wheat Bread", 299),
+        ("333333333333", "Dozen Eggs", 549),
+        ("444444444444", "Apples 1kg", 399),
+        ("555555555555", "Cheddar Cheese 500g", 749),
+    ]
+
+    objs = [
+        Product(upc=upc, name=name, price_cents=price_cents)
+        for upc, name, price_cents in products
+    ]
+    Product.objects.bulk_create(objs)
+
+    print("Database populated with sample products.")
+
+
+def scan_loop():
+    """
+    Simple cash register 'UI':
+    - Prompt for UPC (simulating a scan/input box)
+    - Look up via Django ORM
+    - Display product name and price
+    """
+    print("\n=== Cash Register ===")
+    print("Enter or scan a UPC code.")
+    print("Type 'q' to quit.\n")
+
+    while True:
+        upc = input("Scan / Enter UPC: ").strip()
+
+        if upc.lower() == "q":
+            print("Exiting cash register.")
+            break
+
+        if not upc:
+            print("Please enter a UPC.\n")
+            continue
+
+        try:
+            product = Product.objects.get(upc=upc)
+            print(f"Product: {product.name} | Price: ${product.price:.2f}\n")
+        except Product.DoesNotExist:
+            print("Product not found for this UPC.\n")
+
+
+if __name__ == "__main__":
+    seed_products()
+    scan_loop()
