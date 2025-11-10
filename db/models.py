@@ -1,16 +1,21 @@
-import sys
-
-try:
-    from django.db import models
-except Exception:
-    print('Exception: Django Not Found, please install it with "pip install django".')
-    sys.exit()
+from django.db import models
 
 
-# Sample User model
-class User(models.Model):
-    name = models.CharField(max_length=50, default="Dan")
+class Product(models.Model):
+    """
+    Represents a product in the cash register system.
+    """
+    upc = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=200)
+    # store in cents to avoid float rounding errors
+    price_cents = models.PositiveIntegerField()
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.upc})"
 
+    @property
+    def price(self) -> float:
+        """
+        Return the price in dollars for display.
+        """
+        return self.price_cents / 100.0
